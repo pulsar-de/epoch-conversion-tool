@@ -44,7 +44,7 @@ local tool_FormatSeconds = tool.FormatSeconds
 
 local app_name         = "ECT"
 local app_name_long    = "Epoch Conversion Tool"
-local app_version      = "v0.1"
+local app_version      = "v0.2"
 local app_copyright    = "Copyright (C) " .. os.date( "%Y" ) .. " by Benjamin Kupka"
 local app_license      = "GNU General Public License Version 3"
 local app_env          = "Environment: " .. wxlua.wxLUA_VERSION_STRING
@@ -292,7 +292,7 @@ show_window_1 = function()
    local di_1 = wx.wxDialog(
         wx.NULL,
         wx.wxID_ANY,
-        "Convert epoch to: human-readable date",
+        "Convert human-readable date to: epoch",
         wx.wxDefaultPosition,
         wx.wxSize( size_w, size_h ),
         wx.wxSTAY_ON_TOP + wx.wxDEFAULT_DIALOG_STYLE - wx.wxCLOSE_BOX - wx.wxMAXIMIZE_BOX - wx.wxMINIMIZE_BOX
