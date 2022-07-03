@@ -42,16 +42,15 @@ local tool_FormatSeconds = tool.FormatSeconds
 --// BASICS //-----------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------
 
-local app_name         = "ECT"
-local app_name_long    = "Epoch Conversion Tool"
-local app_version      = "v0.2"
+local app_name         = "Epoch Conversion Tool"
+local app_version      = "v0.3"
 local app_copyright    = "Copyright (C) " .. os.date( "%Y" ) .. " by Benjamin Kupka"
 local app_license      = "GNU General Public License Version 3"
 local app_env          = "Environment: " .. wxlua.wxLUA_VERSION_STRING
 local app_build        = "Built with: "..wx.wxVERSION_STRING
 
-local app_width        = 237
-local app_height       = 172
+local app_width        = 377
+local app_height       = 243
 
 --// files
 local file_tbl = {
@@ -67,6 +66,7 @@ local file_tbl = {
 local font_default      = wx.wxFont( 10, wx.wxMODERN, wx.wxNORMAL, wx.wxNORMAL, false, "Candara" )
 local font_default_bold = wx.wxFont( 12, wx.wxMODERN, wx.wxNORMAL, wx.wxFONTWEIGHT_BOLD, false, "Candara" )
 local font_terminal     = wx.wxFont( 10, wx.wxMODERN, wx.wxNORMAL, wx.wxFONTWEIGHT_BOLD, false, "Consolas" )
+local font_terminal_2   = wx.wxFont( 16, wx.wxMODERN, wx.wxNORMAL, wx.wxFONTWEIGHT_BOLD, false, "Consolas" )
 local font_about_normal = wx.wxFont( 10, wx.wxMODERN, wx.wxNORMAL, wx.wxNORMAL, false, "Candara" )
 local font_about_bold   = wx.wxFont( 12, wx.wxMODERN, wx.wxNORMAL, wx.wxFONTWEIGHT_BOLD, false, "Candara" )
 
@@ -91,20 +91,29 @@ local exec = true
 --// menu
 local msg_menu_menu         = "Menu"
 local msg_menu_about        = "About"
-local msg_menu_about_status = "Informations about"
 local msg_menu_close        = "Close"
 local msg_menu_close_status = "Close Programm"
 
 --// buttons
+local msg_button_converter  = "Start Converter"
 local msg_button_close      = "Close"
 local msg_button_ok         = "OK"
 local msg_button_copy       = "Copy"
+local msg_button_calc       = "Calculate"
 
 --// etc
 local msg_error_1           = "Error"
 local msg_closing_program   = "Files that are necessary to start the program are missing.\nThe program will be closed.\n\nPlease read the log file."
 local msg_really_close      = "Really close?"
 local msg_warning           = "Warning"
+
+local msg_window_1          = "Human-readable date to: epoch"
+local msg_window_1_arr      = "Convert from human-readable date to epoch"
+local msg_window_2          = "Epoch to: Human-readable date"
+local msg_window_2_arr      = "Convert from epoch to human-readable date"
+local msg_window_3          = "Seconds to: Y, D, H, M, S"
+local msg_window_3_arr      = "Convert from seconds to Years, Days, Hours and Minutes"
+local msg_window_4_arr      = "Copy current epoch time to the ClipBoard"
 
 -------------------------------------------------------------------------------------------------------------------------------------
 --// HELPER FUNCS //-----------------------------------------------------------------------------------------------------------------
@@ -170,7 +179,7 @@ local menu_item = function( menu, id, name, status, bmp )
 end
 
 local main_menu = wx.wxMenu()
-main_menu:Append( menu_item( main_menu, wx.wxID_ABOUT,  msg_menu_about .. "\tF1", msg_menu_about_status .. " " .. app_name_long, bmp_about_16x16 ) )
+main_menu:Append( menu_item( main_menu, wx.wxID_ABOUT,  msg_menu_about .. "\tF1", msg_menu_about .. " " .. app_name, bmp_about_16x16 ) )
 main_menu:Append( menu_item( main_menu, wx.wxID_EXIT, msg_menu_close .. "\tF4", msg_menu_close_status, bmp_exit_16x16 ) )
 
 local menu_bar = wx.wxMenuBar()
@@ -190,11 +199,11 @@ frame = wx.wxFrame( wx.NULL, wx.wxID_ANY, app_name .. " " .. app_version, wx.wxP
 frame:Centre( wx.wxBOTH )
 frame:SetMenuBar( menu_bar )
 frame:SetIcons( app_icons )
-frame:CreateStatusBar( 1 )
+frame:CreateStatusBar( 2 )
+frame:SetStatusWidths( { ( app_width / 100*55 ), ( app_width / 100*45 ) } )
 
---// main panel for frame
+--// panel for the frame
 panel = wx.wxPanel( frame, wx.wxID_ANY, wx.wxPoint( 0, 0 ), wx.wxSize( app_width, app_height ) )
---panel:SetBackgroundColour( wx.wxColour( 100, 100, 100 ) )
 panel:SetBackgroundColour( wx.wxColour( 255, 255, 255 ) )
 panel:SetFont( font_default )
 
@@ -209,7 +218,7 @@ show_about_window = function()
    local di_abo = wx.wxDialog(
         wx.NULL,
         wx.wxID_ANY,
-        msg_menu_about .. " " .. app_name_long,
+        msg_menu_about .. " " .. app_name,
         wx.wxDefaultPosition,
         wx.wxSize( size_w, size_h ),
         wx.wxSTAY_ON_TOP + wx.wxDEFAULT_DIALOG_STYLE - wx.wxCLOSE_BOX - wx.wxMAXIMIZE_BOX - wx.wxMINIMIZE_BOX
@@ -227,7 +236,7 @@ show_about_window = function()
     app_logo:Destroy()
 
     --// app name / version
-    control = wx.wxStaticText( di_abo, wx.wxID_ANY, app_name_long .. " " .. app_version, wx.wxPoint( 0, 75 ) )
+    control = wx.wxStaticText( di_abo, wx.wxID_ANY, app_name .. " " .. app_version, wx.wxPoint( 0, 75 ) )
     control:SetFont( font_about_bold )
     control:Centre( wx.wxHORIZONTAL )
 
@@ -292,7 +301,7 @@ show_window_1 = function()
    local di_1 = wx.wxDialog(
         wx.NULL,
         wx.wxID_ANY,
-        "Convert human-readable date to: epoch",
+        msg_window_1,
         wx.wxDefaultPosition,
         wx.wxSize( size_w, size_h ),
         wx.wxSTAY_ON_TOP + wx.wxDEFAULT_DIALOG_STYLE - wx.wxCLOSE_BOX - wx.wxMAXIMIZE_BOX - wx.wxMINIMIZE_BOX
@@ -307,7 +316,7 @@ show_window_1 = function()
     --// date
     local datepicker = wx.wxDatePickerCtrl( di_1, wx.wxID_ANY, wx.wxDefaultDateTime,
                                             wx.wxPoint( 10, 15 ), wx.wxSize( 100, 20 ),
-                                            wx.wxDP_SHOWCENTURY + wx.wxDP_DROPDOWN ) --wx.wxDP_DROPDOWN )
+                                            wx.wxDP_DROPDOWN + wx.wxDP_SHOWCENTURY )
 
     --// time caption
     control = wx.wxStaticText( di_1, wx.wxID_ANY, "Time:", wx.wxPoint( 130, 0 ) )
@@ -399,7 +408,7 @@ show_window_1 = function()
     )
 
     --// button "calc"
-    local btn_calc = wx.wxButton( di_1, wx.wxID_ANY, "Calculate", wx.wxPoint( 10, 45 ), wx.wxSize( 220, 40 ) )
+    local btn_calc = wx.wxButton( di_1, wx.wxID_ANY, msg_button_calc, wx.wxPoint( 10, 45 ), wx.wxSize( 220, 40 ) )
     btn_calc:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
     btn_calc:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
     btn_calc:SetFont( font_default_bold )
@@ -445,7 +454,7 @@ show_window_1 = function()
     --// event - button "Copy"
     btn_copy:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED,
         function( event )
-            -- copy epoch time to clipboard
+            --// copy epoch time to clipboard
             local clipBoard = wx.wxClipboard.Get()
             if clipBoard and clipBoard:Open() then
                 clipBoard:SetData( wx.wxTextDataObject( epoch_time:GetValue() ) )
@@ -471,7 +480,7 @@ show_window_2 = function()
    local di_2 = wx.wxDialog(
         wx.NULL,
         wx.wxID_ANY,
-        "Convert epoch to: human-readable date",
+        msg_window_2,
         wx.wxDefaultPosition,
         wx.wxSize( size_w, size_h ),
         wx.wxSTAY_ON_TOP + wx.wxDEFAULT_DIALOG_STYLE - wx.wxCLOSE_BOX - wx.wxMAXIMIZE_BOX - wx.wxMINIMIZE_BOX
@@ -512,7 +521,7 @@ show_window_2 = function()
     date_format:Select( 0 )
 
     --// button "calc"
-    local btn_calc = wx.wxButton( di_2, wx.wxID_ANY, "Calculate", wx.wxPoint( 25, 85 ), wx.wxSize( 170, 40 ) )
+    local btn_calc = wx.wxButton( di_2, wx.wxID_ANY, msg_button_calc, wx.wxPoint( 25, 85 ), wx.wxSize( 170, 40 ) )
     btn_calc:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
     btn_calc:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
     btn_calc:SetFont( font_default_bold )
@@ -582,7 +591,7 @@ show_window_2 = function()
     --// event - button "Copy"
     btn_copy:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED,
         function( event )
-            -- copy epoch time to clipboard
+            --// copy epoch time to clipboard
             local clipBoard = wx.wxClipboard.Get()
             if clipBoard and clipBoard:Open() then
                 clipBoard:SetData( wx.wxTextDataObject( readable_date:GetValue() ) )
@@ -607,7 +616,7 @@ show_window_3 = function()
    local di_3 = wx.wxDialog(
         wx.NULL,
         wx.wxID_ANY,
-        "Convert seconds to: Y, D, H, M, S",
+        msg_window_3,
         wx.wxDefaultPosition,
         wx.wxSize( size_w, size_h ),
         wx.wxSTAY_ON_TOP + wx.wxDEFAULT_DIALOG_STYLE - wx.wxCLOSE_BOX - wx.wxMAXIMIZE_BOX - wx.wxMINIMIZE_BOX
@@ -625,7 +634,7 @@ show_window_3 = function()
     seconds:SetMaxLength( 15 )
 
     --// button "calc"
-    local btn_calc = wx.wxButton( di_3, wx.wxID_ANY, "Calculate", wx.wxPoint( 25, 43 ), wx.wxSize( 170, 40 ) )
+    local btn_calc = wx.wxButton( di_3, wx.wxID_ANY, msg_button_calc, wx.wxPoint( 25, 43 ), wx.wxSize( 170, 40 ) )
     btn_calc:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
     btn_calc:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
     btn_calc:SetFont( font_default_bold )
@@ -683,7 +692,7 @@ show_window_3 = function()
     --// event - button "Copy"
     btn_copy:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED,
         function( event )
-            -- copy epoch time to clipboard
+            --// copy epoch time to clipboard
             local clipBoard = wx.wxClipboard.Get()
             if clipBoard and clipBoard:Open() then
                 clipBoard:SetData( wx.wxTextDataObject( readable_date:GetValue() ) )
@@ -705,35 +714,46 @@ end
 --// PANEL //------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------
 
---// button "1"
-local btn_1 = wx.wxButton( panel, wx.wxID_ANY, "Date  -->  Epoch", wx.wxPoint( 0, 0 ), wx.wxSize( 230, 30 ) )
-btn_1:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
-btn_1:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
-btn_1:SetFont( font_default_bold )
---// event - button "1"
-btn_1:Connect( wx.wxID_ANY, wx.wxEVT_ENTER_WINDOW, function( event ) frame:SetStatusText( "Click to open window" ) end )
-btn_1:Connect( wx.wxID_ANY, wx.wxEVT_LEAVE_WINDOW, function( event ) frame:SetStatusText( "Please make your choice..." ) end )
-btn_1:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED, function( event ) show_window_1() end )
-
---// button "2"
-local btn_2 = wx.wxButton( panel, wx.wxID_ANY, "Epoch  -->  Date", wx.wxPoint( 0, 35 ), wx.wxSize( 230, 30 ) )
-btn_2:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
-btn_2:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
-btn_2:SetFont( font_default_bold )
---// events - button "2"
-btn_2:Connect( wx.wxID_ANY, wx.wxEVT_ENTER_WINDOW, function( event ) frame:SetStatusText( "Click to open window" ) end )
-btn_2:Connect( wx.wxID_ANY, wx.wxEVT_LEAVE_WINDOW, function( event ) frame:SetStatusText( "Please make your choice..." ) end )
-btn_2:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED, function( event ) show_window_2() end )
-
---// button "3"
-local btn_3 = wx.wxButton( panel, wx.wxID_ANY, "Seconds  -->  Y, D, H, M, S", wx.wxPoint( 0, 70 ), wx.wxSize( 230, 30 ) )
-btn_3:SetBackgroundColour( wx.wxColour( 0, 0, 0 ) )
-btn_3:SetForegroundColour( wx.wxColour( 240, 240, 240 ) )
-btn_3:SetFont( font_default_bold )
---// events - button "3"
-btn_3:Connect( wx.wxID_ANY, wx.wxEVT_ENTER_WINDOW, function( event ) frame:SetStatusText( "Click to open window" ) end )
-btn_3:Connect( wx.wxID_ANY, wx.wxEVT_LEAVE_WINDOW, function( event ) frame:SetStatusText( "Please make your choice..." ) end )
-btn_3:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED, function( event ) show_window_3() end )
+local radiobox = wx.wxRadioBox(
+    panel,
+    wx.wxID_ANY,
+    "Please make your choice:",
+    wx.wxPoint( 10, 10 ),
+    wx.wxSize( 350, 120 ),
+    {
+        msg_window_1_arr, -- 0
+        msg_window_2_arr, -- 1
+        msg_window_3_arr, -- 2
+        msg_window_4_arr, -- 3
+    },
+    1, -- columns
+    wx.wxSUNKEN_BORDER
+)
+--// button "start converter"
+local btn_start = wx.wxButton( panel, wx.wxID_ANY, msg_button_converter, wx.wxPoint( 9, 135 ), wx.wxSize( 352, 25 ) )
+btn_start:SetBackgroundColour( wx.wxColour( 240, 240, 240 ) )
+btn_start:SetForegroundColour( wx.wxColour( 0, 0, 0 ) )
+btn_start:SetFont( font_default_bold )
+--// event - button "start converter"
+btn_start:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED,
+    function( event )
+        if radiobox:GetSelection() == 0 then
+            show_window_1()
+        elseif radiobox:GetSelection() == 1 then
+            show_window_2()
+        elseif radiobox:GetSelection() == 2 then
+            show_window_3()
+        elseif radiobox:GetSelection() == 3 then
+            --// copy epoch time to clipboard
+            local clipBoard = wx.wxClipboard.Get()
+            if clipBoard and clipBoard:Open() then
+                clipBoard:SetData( wx.wxTextDataObject( tostring( os.time() ) ) )
+                clipBoard:Close()
+            end
+            wx.wxMessageBox( "Epoch time successfully copied to the ClipBoard" , "Info", wx.wxOK + wx.wxCENTRE + wx.wxICON_INFORMATION )
+        end
+    end
+)
 
 
 -------------------------------------------------------------------------------------------------------------------------------------
@@ -743,34 +763,47 @@ btn_3:Connect( wx.wxID_ANY, wx.wxEVT_COMMAND_BUTTON_CLICKED, function( event ) s
 main = function()
     check_files_exists( file_tbl )
     if exec then
-        -- execute frame
-        frame:Show( true )
-        frame:Connect( wx.wxEVT_CLOSE_WINDOW,
+        --// execute frame
+        frame:Show( true )        
+        --// timer
+        local timer   = nil; timer = wx.wxTimer( panel )
+        local timer_i = 1000 -- timer Intervall (1 second)
+        local timer_m = false -- timer mode; false = endless timer / true = one time (oneShot)
+        timer:Start( timer_i, timer_m ) -- start timer
+        --// event - timer
+        panel:Connect( wx.wxEVT_TIMER, -- timer iteration
+            function( event )
+                frame:SetStatusText( "Current date:  " .. os.date( "%Y-%m-%d  %X", os.time() ), 0 )
+                frame:SetStatusText( " Current epoch:  " .. os.time(), 1 )
+            end
+        )
+        --// event close application
+        frame:Connect( wx.wxEVT_CLOSE_WINDOW, -- "X" top right
             function( event )
                 di = wx.wxMessageDialog( wx.NULL, msg_really_close, msg_warning, wx.wxYES_NO + wx.wxICON_QUESTION + wx.wxCENTRE )
                 result = di:ShowModal(); di:Destroy()
                 if result == wx.wxID_YES then
                     if event then event:Skip() end
+                    if timer and timer:IsRunning() then timer:Stop(); timer:delete(); timer = nil end
                     if frame then frame:Destroy() end
                 end
             end
         )
-        -- events - menubar
+        --// events - menubar
         frame:Connect( wx.wxID_EXIT, wx.wxEVT_COMMAND_MENU_SELECTED,
             function( event )
-                frame:Close( true )
+                frame:Close( true ) -- menu exit
             end
         )
         frame:Connect( wx.wxID_ABOUT, wx.wxEVT_COMMAND_MENU_SELECTED,
             function( event )
-                show_about_window( frame )
+                show_about_window( frame ) -- about window
             end
         )
-        -- status text on app start
-        frame:SetStatusText( "Please make your choice..." ) -- left
     else
-        -- kill frame
+        --// kill frame, events, timer
         if event then event:Skip() end
+        if timer and timer:IsRunning() then timer:Stop(); timer:delete(); timer = nil end
         if frame then frame:Destroy() end
     end
 end
